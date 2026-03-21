@@ -1,0 +1,18 @@
+# Données
+data/
+
+# Environnement virtuel
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# MLflow (runs volumineuses)
+mlruns/
+
+# Divers
+.env
+notes.txt
