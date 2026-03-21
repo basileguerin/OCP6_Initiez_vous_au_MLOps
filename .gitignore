@@ -13,6 +13,9 @@ __pycache__/
 # MLflow (runs volumineuses)
 mlruns/
 
+# VSCode
+.vscode/
+
 # Divers
 .env
 notes.txt
