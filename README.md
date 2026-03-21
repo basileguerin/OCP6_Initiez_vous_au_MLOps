@@ -27,7 +27,6 @@ La société fictive **"Prêt à dépenser"** propose des crédits à la consomm
 │   ├── 03_training_mlflow.ipynb # Entraînement de 5 modèles avec tracking MLflow
 │   └── 04_optimisation.ipynb # Tuning Optuna, seuil métier, serving MLflow
 ├── mlruns/                   # Tracking MLflow (généré automatiquement)
-├── recap_travaux.txt         # Notes de synthèse du projet
 └── README.md
 ```
 
