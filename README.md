@@ -22,10 +22,13 @@ La société fictive **"Prêt à dépenser"** propose des crédits à la consomm
 │   ├── raw/                  # Données brutes Kaggle (non versionnées)
 │   └── processed/            # Dataset final après preprocessing
 ├── notebooks/
-│   ├── 01_EDA.ipynb          # Exploration des données
-│   ├── 02_preprocessing.ipynb # Nettoyage, encodage, jointures, feature engineering
-│   ├── 03_training_mlflow.ipynb # Entraînement de 5 modèles avec tracking MLflow
-│   └── 04_optimisation.ipynb # Tuning Optuna, seuil métier, serving MLflow
+│   ├── 01_EDA.ipynb              # Exploration des données
+│   ├── 02_preprocessing.ipynb    # Nettoyage, encodage, jointures, feature engineering
+│   ├── 03_training_mlflow.ipynb  # Entraînement de 5 modèles avec tracking MLflow
+│   ├── 04_optimisation.ipynb     # Tuning Optuna, seuil métier, serving MLflow
+│   └── 05_explicabilite.ipynb    # Explicabilité SHAP (importance globale, waterfall)
+├── outputs/
+│   └── shap/                 # Graphiques SHAP exportés (PNG)
 ├── mlruns/                   # Tracking MLflow (généré automatiquement)
 └── README.md
 ```
@@ -65,6 +68,12 @@ Tous les modèles sont évalués avec `StratifiedKFold(n_splits=5)` + métriques
 - **AUC finale** : 0.7759
 - Modèle enregistré dans le **MLflow Model Registry**
 - **MLflow Serving** : API REST testée via `mlflow models serve`
+
+### 5. Explicabilité (`05_explicabilite.ipynb`)
+- **Feature importance** LightGBM (gain) — top 20
+- **SHAP** : importance globale (bar) + direction des effets (beeswarm)
+- **Waterfall plots** : explication individuelle sur un bon client (proba = 0.021) et un client en défaut (proba = 0.928)
+- Graphiques exportés dans `outputs/shap/` et loggés comme artefacts MLflow
 
 ---
 
