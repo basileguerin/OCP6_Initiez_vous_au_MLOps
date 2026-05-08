@@ -1,0 +1,25 @@
+{
+  "features": [
+    "EXT_SOURCE_2",
+    "EXT_SOURCE_3",
+    "EXT_SOURCE_1",
+    "RATIO_CREDIT_BIEN",
+    "INSTALL_MANQUE_MOYEN",
+    "CODE_GENDER_M",
+    "DAYS_EMPLOYED",
+    "AMT_ANNUITY",
+    "FLAG_OWN_CAR",
+    "CC_SOLDE_MOYEN",
+    "BUREAU_JOURS_MOYEN",
+    "POS_NB_MOIS",
+    "AGE",
+    "AMT_CREDIT",
+    "BUREAU_DETTE_MOYENNE",
+    "NAME_EDUCATION_TYPE_Higher_education",
+    "PREV_NB_REFUSEES",
+    "NAME_FAMILY_STATUS_Married",
+    "DAYS_ID_PUBLISH",
+    "BUREAU_NB_ACTIFS"
+  ],
+  "k": 20
+}

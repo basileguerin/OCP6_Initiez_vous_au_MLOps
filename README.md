@@ -26,9 +26,17 @@ La société fictive **"Prêt à dépenser"** propose des crédits à la consomm
 │   ├── 02_preprocessing.ipynb    # Nettoyage, encodage, jointures, feature engineering
 │   ├── 03_training_mlflow.ipynb  # Entraînement de 5 modèles avec tracking MLflow
 │   ├── 04_optimisation.ipynb     # Tuning Optuna, seuil métier, serving MLflow
-│   └── 05_explicabilite.ipynb    # Explicabilité SHAP (importance globale, waterfall)
+│   ├── 05_explicabilite.ipynb    # Explicabilité SHAP (importance globale, waterfall)
+│   └── 06_feature_selection.ipynb  # Sélection de features SHAP + modèle réduit pour prod
+├── models/
+│   ├── model_reduit.pkl              # Modèle LightGBM production (20 features)
+│   └── features_selectionnees.json   # Liste des 20 features + seuil de décision
 ├── outputs/
-│   └── shap/                 # Graphiques SHAP exportés (PNG)
+│   ├── shap/                 # Graphiques SHAP (notebook 05)
+│   ├── shap_importance_top20_selection.png
+│   ├── auc_vs_k.png
+│   ├── seuil_optimal_reduit.png
+│   └── confusion_matrix_reduit.png
 ├── mlruns/                   # Tracking MLflow (généré automatiquement)
 └── README.md
 ```
@@ -75,6 +83,14 @@ Tous les modèles sont évalués avec `StratifiedKFold(n_splits=5)` + métriques
 - **Waterfall plots** : explication individuelle sur un bon client (proba = 0.021) et un client en défaut (proba = 0.928)
 - Graphiques exportés dans `outputs/shap/` et loggés comme artefacts MLflow
 
+### 6. Sélection de features pour la production (`06_feature_selection.ipynb`)
+- Ranking des features par importance SHAP globale (`mean(|SHAP value|)`) — top 20 retenus
+- Boucle k = 1 à 20 avec `StratifiedKFold(5)` : AUC CV pour chaque sous-ensemble
+- Courbe AUC vs k monotone croissante sans plateau → k = 20 retenu (−0.010 AUC vs modèle complet)
+- Seuil de décision recalculé sur probabilités OOF : **0.53** (vs 0.54 pour le modèle complet)
+- Modèle final enregistré dans le MLflow Model Registry (`scoring-credit-lgbm` v2)
+- Artefacts production exportés dans `models/`
+
 ---
 
 ## MLflow
@@ -110,8 +126,17 @@ pip install -r requirements.txt
 
 ## Résultats
 
-Le modèle final **LightGBM tuné** atteint :
-- **AUC = 0.776** (objectif < 0.82 pour éviter l'overfitting)
-- **Sensibilité = 0.677** — détecte 68% des vrais défauts
-- **Spécificité = 0.735**
-- Seuil de décision optimisé sur le coût métier (FN = 10x FP)
+### Modèle optimisé v1 (119 features — baseline)
+- **AUC = 0.776** — **Sensibilité = 0.677** — Seuil = 0.54
+
+### Modèle production v2 (20 features — déployé)
+- **AUC = 0.768** — **Sensibilité = 0.655** — **Spécificité = 0.746** — Seuil = **0.53**
+- 20 features sélectionnées par SHAP sur 119 (réduction de 83%)
+- Perte de performance : −0.008 AUC, −0.022 sensibilité — jugée acceptable pour la prod
+
+Les 20 features retenues (par ordre d'importance SHAP) :
+`EXT_SOURCE_2`, `EXT_SOURCE_3`, `EXT_SOURCE_1`, `RATIO_CREDIT_BIEN`, `INSTALL_MANQUE_MOYEN`,
+`CODE_GENDER_M`, `DAYS_EMPLOYED`, `AMT_ANNUITY`, `FLAG_OWN_CAR`, `CC_SOLDE_MOYEN`,
+`BUREAU_JOURS_MOYEN`, `POS_NB_MOIS`, `AGE`, `AMT_CREDIT`, `BUREAU_DETTE_MOYENNE`,
+`NAME_EDUCATION_TYPE_Higher_education`, `PREV_NB_REFUSEES`, `NAME_FAMILY_STATUS_Married`,
+`DAYS_ID_PUBLISH`, `BUREAU_NB_ACTIFS`
