@@ -2,6 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# libgomp est la librairie OpenMP requise par LightGBM
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+
 # Dépendances d'abord — couche cachée si le code change mais pas requirements
 COPY requirements-api.txt .
 RUN pip install --no-cache-dir -r requirements-api.txt
