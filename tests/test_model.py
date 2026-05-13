@@ -9,6 +9,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 MODELS_DIR = Path(__file__).parent.parent / "models"
@@ -62,9 +63,10 @@ class TestChargement:
 # ─── Tests de prédiction ──────────────────────────────────────────────────────
 
 class TestPrediction:
-    def _vecteur(self, features_meta, valeurs: dict) -> list:
-        """Construit un vecteur de features dans l'ordre du modèle."""
-        return [[valeurs[f] for f in features_meta["features"]]]
+    def _vecteur(self, features_meta, valeurs: dict) -> pd.DataFrame:
+        """Construit un DataFrame avec les noms de colonnes attendus par le modèle."""
+        features = features_meta["features"]
+        return pd.DataFrame([[valeurs[f] for f in features]], columns=features)
 
     def test_predict_proba_retourne_deux_colonnes(self, model, features_meta):
         """predict_proba doit retourner une matrice (n, 2) : [proba_0, proba_1]."""

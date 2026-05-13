@@ -11,6 +11,7 @@ jamais à chaque requête.
 import time
 from contextlib import asynccontextmanager
 
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 
 from api.model_loader import load_model, FEATURES, SEUIL
@@ -71,9 +72,12 @@ def predict(client: ClientFeatures):
 
     debut = time.time()
 
-    # Construction du vecteur dans l'ordre exact des features du modèle
-    # getattr(client, feature) récupère la valeur Pydantic de chaque champ
-    vecteur = [[getattr(client, feature) for feature in ml.FEATURES]]
+    # DataFrame avec les noms de colonnes — le modèle a été entraîné avec
+    # des noms de features, passer une liste brute génère un warning sklearn
+    vecteur = pd.DataFrame(
+        [[getattr(client, feature) for feature in ml.FEATURES]],
+        columns=ml.FEATURES,
+    )
 
     # predict_proba retourne [[proba_classe_0, proba_classe_1]]
     # On garde la colonne 1 : probabilité d'être en défaut
