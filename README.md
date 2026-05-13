@@ -18,9 +18,14 @@ La société fictive **"Prêt à dépenser"** propose des crédits à la consomm
 ## Structure du projet
 
 ```
-├── data/
-│   ├── raw/                  # Données brutes Kaggle (non versionnées)
-│   └── processed/            # Dataset final après preprocessing
+├── api/
+│   ├── main.py               # App FastAPI — endpoints /health et /predict
+│   ├── model_loader.py       # Chargement unique du modèle au démarrage
+│   └── schemas.py            # Validation des 20 features avec Pydantic
+├── tests/
+│   ├── conftest.py           # Fixtures pytest partagées
+│   ├── test_api.py           # Tests API (cas nominaux + validation entrées)
+│   └── test_model.py         # Tests chargement et prédiction du modèle
 ├── notebooks/
 │   ├── 01_EDA.ipynb              # Exploration des données
 │   ├── 02_preprocessing.ipynb    # Nettoyage, encodage, jointures, feature engineering
@@ -31,14 +36,15 @@ La société fictive **"Prêt à dépenser"** propose des crédits à la consomm
 ├── models/
 │   ├── model_reduit.pkl              # Modèle LightGBM production (20 features)
 │   └── features_selectionnees.json   # Liste des 20 features + seuil de décision
-├── outputs/
-│   ├── shap/                 # Graphiques SHAP (notebook 05)
-│   ├── shap_importance_top20_selection.png
-│   ├── auc_vs_k.png
-│   ├── seuil_optimal_reduit.png
-│   └── confusion_matrix_reduit.png
-├── mlruns/                   # Tracking MLflow (généré automatiquement)
-└── README.md
+├── data/
+│   ├── raw/                  # Données brutes Kaggle (non versionnées)
+│   └── processed/            # Dataset final après preprocessing
+├── outputs/                  # Graphiques SHAP et courbes d'évaluation
+├── .github/workflows/
+│   └── tests.yml             # CI : tests automatiques sur push develop
+├── requirements.txt          # Dépendances complètes (notebooks + API)
+├── requirements-api.txt      # Dépendances légères pour le déploiement
+└── mlruns/                   # Tracking MLflow (généré automatiquement)
 ```
 
 ---
@@ -90,6 +96,56 @@ Tous les modèles sont évalués avec `StratifiedKFold(n_splits=5)` + métriques
 - Seuil de décision recalculé sur probabilités OOF : **0.53** (vs 0.54 pour le modèle complet)
 - Modèle final enregistré dans le MLflow Model Registry (`scoring-credit-lgbm` v2)
 - Artefacts production exportés dans `models/`
+
+---
+
+## API de scoring (FastAPI)
+
+L'API expose le modèle de production via deux endpoints :
+
+| Endpoint | Méthode | Description |
+|---|---|---|
+| `/health` | GET | Vérifie que l'API est opérationnelle |
+| `/predict` | POST | Retourne le score de défaut et la décision |
+| `/docs` | GET | Interface Swagger interactive |
+
+### Lancer l'API en local
+
+```bash
+source .venv/bin/activate
+python -m uvicorn api.main:app --reload --port 8000
+```
+
+Swagger accessible sur **`http://127.0.0.1:8000/docs`**
+
+### Exemple de requête
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "EXT_SOURCE_2": 0.62, "EXT_SOURCE_3": 0.55, "EXT_SOURCE_1": 0.48,
+    "RATIO_CREDIT_BIEN": 1.10, "INSTALL_MANQUE_MOYEN": 0.0,
+    "CODE_GENDER_M": 0.0, "DAYS_EMPLOYED": -2500.0, "AMT_ANNUITY": 18000.0,
+    "FLAG_OWN_CAR": 0.0, "CC_SOLDE_MOYEN": 5000.0,
+    "BUREAU_JOURS_MOYEN": -800.0, "POS_NB_MOIS": 24.0, "AGE": 42.0,
+    "AMT_CREDIT": 270000.0, "BUREAU_DETTE_MOYENNE": 0.0,
+    "NAME_EDUCATION_TYPE_Higher_education": 0.0, "PREV_NB_REFUSEES": 0.0,
+    "NAME_FAMILY_STATUS_Married": 1.0, "DAYS_ID_PUBLISH": -1500.0,
+    "BUREAU_NB_ACTIFS": 1.0
+  }'
+```
+
+Réponse :
+```json
+{"score": 0.1243, "decision": "ACCEPTE", "seuil": 0.53, "latence_ms": 4.2}
+```
+
+### Tests
+
+```bash
+python -m pytest tests/ -v --cov=api --cov-report=term-missing
+```
 
 ---
 
