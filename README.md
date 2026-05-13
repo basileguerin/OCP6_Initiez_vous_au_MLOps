@@ -166,13 +166,17 @@ UI accessible sur `http://127.0.0.1:5000`
 ## Installation
 
 ```bash
-git clone <repo_url>
-cd projet6
+git clone git@github.com:basileguerin/Scoring-Credit.git
+cd Scoring-Credit
 
 python -m venv .venv
 source .venv/bin/activate
 
+# Dépendances complètes (notebooks + API)
 pip install -r requirements.txt
+
+# Dépendances légères (API seule, pour Docker)
+pip install -r requirements-api.txt
 ```
 
 > **Données non versionnées** — les fichiers CSV sont trop volumineux pour Git.
