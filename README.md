@@ -166,7 +166,7 @@ UI accessible sur `http://127.0.0.1:5000`
 ## Installation
 
 ```bash
-git clone git@github.com:basileguerin/Scoring-Credit.git
+git clone https://github.com/basileguerin/Scoring-Credit.git
 cd Scoring-Credit
 
 python -m venv .venv
