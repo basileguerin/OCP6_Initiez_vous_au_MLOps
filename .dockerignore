@@ -1,0 +1,30 @@
+# Environnement virtuel — recréé dans l'image
+.venv/
+
+# Données — trop volumineuses, non nécessaires à l'API
+data/
+
+# Notebooks et outputs — pas utiles en production
+notebooks/
+outputs/
+mlruns/
+
+# Tests — pas embarqués dans l'image de production
+tests/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Git et CI
+.git/
+.github/
+
+# Divers
+.env
+.vscode/
+notes.txt
+CLAUDE.md
+*.md
