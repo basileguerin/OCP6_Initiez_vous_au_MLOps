@@ -20,3 +20,4 @@ mlruns/
 .env
 notes.txt
 CLAUDE.md
+logs/*.jsonl

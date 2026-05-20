@@ -18,6 +18,7 @@ from fastapi.responses import RedirectResponse
 from api.model_loader import load_model, FEATURES, SEUIL
 from api.schemas import ClientFeatures, PredictionResponse
 import api.model_loader as ml
+import api.logger as logger
 
 
 # ─── Chargement du modèle au démarrage ───────────────────────────────────────
@@ -76,25 +77,40 @@ def predict(client: ClientFeatures):
     if ml.model is None:
         raise HTTPException(status_code=503, detail="Modèle non chargé")
 
-    debut = time.time()
+    debut_total = time.time()
 
-    # DataFrame avec les noms de colonnes — le modèle a été entraîné avec
-    # des noms de features, passer une liste brute génère un warning sklearn
-    vecteur = pd.DataFrame(
-        [[getattr(client, feature) for feature in ml.FEATURES]],
-        columns=ml.FEATURES,
-    )
+    try:
+        # DataFrame avec les noms de colonnes — le modèle a été entraîné avec
+        # des noms de features, passer une liste brute génère un warning sklearn
+        vecteur = pd.DataFrame(
+            [[getattr(client, feature) for feature in ml.FEATURES]],
+            columns=ml.FEATURES,
+        )
 
-    # predict_proba retourne [[proba_classe_0, proba_classe_1]]
-    # On garde la colonne 1 : probabilité d'être en défaut
-    score = float(ml.model.predict_proba(vecteur)[0][1])
+        debut_inference = time.time()
+        # predict_proba retourne [[proba_classe_0, proba_classe_1]]
+        score = float(ml.model.predict_proba(vecteur)[0][1])
+        inference_ms = round((time.time() - debut_inference) * 1000, 2)
 
-    decision = "REFUSE" if score >= ml.SEUIL else "ACCEPTE"
-    latence_ms = round((time.time() - debut) * 1000, 2)
+        decision = "REFUSE" if score >= ml.SEUIL else "ACCEPTE"
+        response_ms = round((time.time() - debut_total) * 1000, 2)
 
-    return PredictionResponse(
-        score=round(score, 4),
-        decision=decision,
-        seuil=ml.SEUIL,
-        latence_ms=latence_ms,
-    )
+        logger.log_prediction(
+            features=client.model_dump(),
+            score=round(score, 4),
+            decision=decision,
+            inference_ms=inference_ms,
+            response_ms=response_ms,
+        )
+
+        return PredictionResponse(
+            score=round(score, 4),
+            decision=decision,
+            seuil=ml.SEUIL,
+            latence_ms=inference_ms,
+        )
+
+    except Exception as e:
+        response_ms = round((time.time() - debut_total) * 1000, 2)
+        logger.log_erreur(error_message=str(e), response_ms=response_ms)
+        raise HTTPException(status_code=500, detail=str(e))
