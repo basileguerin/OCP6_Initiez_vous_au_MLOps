@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 
 from api.model_loader import load_model, FEATURES, SEUIL
 from api.schemas import ClientFeatures, PredictionResponse
@@ -48,6 +49,11 @@ app = FastAPI(
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
+
 
 @app.get("/health", tags=["Monitoring"])
 def health():
