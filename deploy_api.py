@@ -1,6 +1,6 @@
 """
 Déploiement de l'API sur Hugging Face Spaces.
-Usage : python deploy_hf.py
+Usage : python deploy_api.py
 """
 import os
 from pathlib import Path
@@ -23,9 +23,9 @@ create_repo(repo_id=REPO_ID, repo_type="space", space_sdk="docker",
 
 # Uniquement les fichiers nécessaires à l'API — pas les notebooks ni outputs
 fichiers = [
-    (ROOT / "Dockerfile",                             "Dockerfile"),
+    (ROOT / "Dockerfile.api",                         "Dockerfile"),
     (ROOT / "requirements-api.txt",                   "requirements-api.txt"),
-    (ROOT / "space_README.md",                        "README.md"),
+    (ROOT / "space_README_api.md",                    "README.md"),
     (ROOT / "api" / "__init__.py",                    "api/__init__.py"),
     (ROOT / "api" / "main.py",                        "api/main.py"),
     (ROOT / "api" / "model_loader.py",                "api/model_loader.py"),

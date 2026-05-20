@@ -1,0 +1,2 @@
+# gradio est fourni par HF Spaces — ne pas le pinner ici
+httpx==0.28.1
