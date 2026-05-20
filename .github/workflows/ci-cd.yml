@@ -1,0 +1,48 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installation des dépendances
+        run: pip install -r requirements-api.txt pytest pytest-cov httpx
+
+      - name: Tests
+        run: pytest tests/ -v --cov=api --cov-report=term-missing
+
+  deploy:
+    needs: test
+    # Déploiement uniquement sur push vers main (pas sur les PRs ni develop)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installation des dépendances de déploiement
+        run: pip install huggingface_hub python-dotenv
+
+      - name: Déploiement API sur HF Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python deploy_api.py
+
+      - name: Déploiement Gradio sur HF Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python deploy_gradio.py
