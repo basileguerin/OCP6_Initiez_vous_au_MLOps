@@ -90,7 +90,7 @@ with col1:
     fig.add_vline(x=SEUIL, line_dash="dash", line_color="red",
                   annotation_text=f"Seuil {SEUIL}", annotation_position="top right")
     fig.update_layout(showlegend=False, height=350)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 with col2:
     st.markdown("#### Décisions crédit")
@@ -101,7 +101,7 @@ with col2:
                   color_discrete_map={"ACCEPTE": "#55A868", "REFUSE": "#C44E52"},
                   hole=0.4)
     fig2.update_layout(height=350)
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
 
 col3, col4 = st.columns(2)
 
@@ -111,7 +111,7 @@ with col3:
                         labels={"inference_ms": "ms", "count": "Requêtes"},
                         color_discrete_sequence=["#DD8452"])
     fig3.update_layout(height=300)
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width="stretch")
 
 with col4:
     st.markdown("#### Temps de réponse total (ms)")
@@ -119,7 +119,99 @@ with col4:
                         labels={"response_ms": "ms", "count": "Requêtes"},
                         color_discrete_sequence=["#8172B2"])
     fig4.update_layout(height=300)
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig4, width="stretch")
+
+st.divider()
+
+# --- Distribution des features ---
+st.markdown("### Distribution des features (prod vs référence)")
+st.caption(
+    "Distribution d'une feature en production (orange) comparée aux données d'entraînement (bleu). "
+    "Un écart visuel important peut signaler un drift."
+)
+
+if DATA_REF.exists():
+    feat_choisie = st.selectbox("Choisir une feature", FEATURES)
+    df_ref_dist  = charger_reference()
+
+    fig_dist = go.Figure()
+    fig_dist.add_trace(go.Histogram(
+        x=df_ref_dist[feat_choisie],
+        name="Référence (train)",
+        opacity=0.55,
+        marker_color="#4C72B0",
+        nbinsx=40,
+    ))
+    fig_dist.add_trace(go.Histogram(
+        x=df_ok[feat_choisie].astype(float),
+        name="Production",
+        opacity=0.55,
+        marker_color="#DD8452",
+        nbinsx=40,
+    ))
+    fig_dist.update_layout(
+        barmode="overlay",
+        height=380,
+        xaxis_title=feat_choisie,
+        yaxis_title="Fréquence",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    st.plotly_chart(fig_dist, width="stretch")
+else:
+    st.info("Dataset de référence non disponible (`data/processed/dataset_final.csv`).")
+
+st.divider()
+
+# --- Table d'analyse statistique des features ---
+st.markdown("### Analyse statistique des features clés")
+st.caption(
+    "Moyennes et écarts-types en référence vs production. "
+    "Le **Δ moy.** indique l'écart relatif : 🟢 < 5 %, 🟡 5–15 %, 🔴 > 15 %."
+)
+
+if DATA_REF.exists():
+    df_ref_stats  = charger_reference()
+    df_prod_stats = df_ok[FEATURES].astype(float)
+
+    lignes = []
+    for feat in FEATURES:
+        mean_ref  = df_ref_stats[feat].mean()
+        mean_prod = df_prod_stats[feat].mean()
+        delta_pct = ((mean_prod - mean_ref) / abs(mean_ref) * 100) if mean_ref != 0 else 0.0
+        lignes.append({
+            "Feature":    feat,
+            "Moy. réf.":  round(mean_ref, 4),
+            "Moy. prod.": round(mean_prod, 4),
+            "Δ moy. (%)": round(delta_pct, 1),
+            "Std réf.":   round(df_ref_stats[feat].std(), 4),
+            "Std prod.":  round(df_prod_stats[feat].std(), 4),
+        })
+
+    df_stats = pd.DataFrame(lignes)
+
+    def colorier_delta(val: float) -> str:
+        """Colorie la cellule selon l'amplitude du drift."""
+        a = abs(val)
+        if a < 5:
+            return "color: #2a9d2a"
+        elif a < 15:
+            return "color: #c97a00"
+        return "color: #C44E52"
+
+    styled = (
+        df_stats.style
+        .map(colorier_delta, subset=["Δ moy. (%)"])
+        .format({
+            "Moy. réf.":  "{:.4f}",
+            "Moy. prod.": "{:.4f}",
+            "Δ moy. (%)": "{:+.1f}%",
+            "Std réf.":   "{:.4f}",
+            "Std prod.":  "{:.4f}",
+        })
+    )
+    st.dataframe(styled, width="stretch", hide_index=True)
+else:
+    st.info("Dataset de référence non disponible (`data/processed/dataset_final.csv`).")
 
 st.divider()
 
