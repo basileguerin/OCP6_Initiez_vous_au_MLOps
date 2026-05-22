@@ -7,6 +7,17 @@ On couvre :
     valeurs hors plage
 """
 import pytest
+from unittest.mock import patch
+
+
+# ─── Tests GET / ──────────────────────────────────────────────────────────────
+
+class TestRoot:
+    def test_root_redirige_vers_docs(self, client):
+        """GET / doit rediriger vers /docs (sans suivre la redirection)."""
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code in (307, 308)
+        assert "/docs" in response.headers["location"]
 
 
 # ─── Tests /health ────────────────────────────────────────────────────────────
@@ -28,6 +39,18 @@ class TestHealth:
         """Le modèle de production utilise exactement 20 features."""
         response = client.get("/health")
         assert response.json()["n_features"] == 20
+
+    def test_health_contient_inference_mode(self, client):
+        """La réponse /health indique le mode d'inférence actif (onnx ou pkl)."""
+        data = client.get("/health").json()
+        assert "inference_mode" in data
+        assert data["inference_mode"] in ("onnx", "pkl")
+
+    def test_health_503_si_modele_non_charge(self, client):
+        """Si le modèle n'est pas chargé, /health retourne 503."""
+        with patch("api.model_loader.is_loaded", return_value=False):
+            response = client.get("/health")
+        assert response.status_code == 503
 
 
 # ─── Tests /predict — cas nominal ─────────────────────────────────────────────
@@ -157,3 +180,19 @@ class TestPredictValidation:
         """Un body vide doit retourner 422 (aucun champ fourni)."""
         response = client.post("/predict", json={})
         assert response.status_code == 422
+
+
+# ─── Tests /predict — cas limites ─────────────────────────────────────────────
+
+class TestPredictEdgeCases:
+    def test_predict_503_si_modele_non_charge(self, client, payload_valide):
+        """Si le modèle n'est pas chargé, /predict retourne 503."""
+        with patch("api.model_loader.is_loaded", return_value=False):
+            response = client.post("/predict", json=payload_valide)
+        assert response.status_code == 503
+
+    def test_predict_500_si_erreur_interne(self, client, payload_valide):
+        """Une erreur inattendue dans predict_score doit retourner 500."""
+        with patch("api.model_loader.predict_score", side_effect=RuntimeError("erreur simulée")):
+            response = client.post("/predict", json=payload_valide)
+        assert response.status_code == 500
