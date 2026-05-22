@@ -11,11 +11,10 @@ jamais à chaque requête.
 import time
 from contextlib import asynccontextmanager
 
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 
-from api.model_loader import load_model, FEATURES, SEUIL
+from api.model_loader import load_model
 from api.schemas import ClientFeatures, PredictionResponse
 import api.model_loader as ml
 import api.logger as logger
@@ -59,9 +58,10 @@ def root():
 @app.get("/health", tags=["Monitoring"])
 def health():
     """Vérifie que l'API est opérationnelle et que le modèle est chargé."""
-    if ml.model is None:
+    if not ml.is_loaded():
         raise HTTPException(status_code=503, detail="Modèle non chargé")
-    return {"status": "ok", "model_loaded": True, "n_features": len(ml.FEATURES)}
+    return {"status": "ok", "model_loaded": True, "n_features": len(ml.FEATURES),
+            "inference_mode": ml.inference_mode()}
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prédiction"])
@@ -74,22 +74,16 @@ def predict(client: ClientFeatures):
     - **seuil** : seuil de décision métier (toujours 0.53)
     - **latence_ms** : temps de traitement en millisecondes
     """
-    if ml.model is None:
+    if not ml.is_loaded():
         raise HTTPException(status_code=503, detail="Modèle non chargé")
 
     debut_total = time.time()
 
     try:
-        # DataFrame avec les noms de colonnes — le modèle a été entraîné avec
-        # des noms de features, passer une liste brute génère un warning sklearn
-        vecteur = pd.DataFrame(
-            [[getattr(client, feature) for feature in ml.FEATURES]],
-            columns=ml.FEATURES,
-        )
+        valeurs = [getattr(client, f) for f in ml.FEATURES]
 
         debut_inference = time.time()
-        # predict_proba retourne [[proba_classe_0, proba_classe_1]]
-        score = float(ml.model.predict_proba(vecteur)[0][1])
+        score = ml.predict_score(valeurs)
         inference_ms = round((time.time() - debut_inference) * 1000, 2)
 
         decision = "REFUSE" if score >= ml.SEUIL else "ACCEPTE"

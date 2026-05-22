@@ -30,7 +30,9 @@ fichiers = [
     (ROOT / "api" / "main.py",                        "api/main.py"),
     (ROOT / "api" / "model_loader.py",                "api/model_loader.py"),
     (ROOT / "api" / "schemas.py",                     "api/schemas.py"),
+    (ROOT / "api" / "logger.py",                      "api/logger.py"),
     (ROOT / "models" / "model_reduit.pkl",            "models/model_reduit.pkl"),
+    (ROOT / "models" / "model_reduit.onnx",           "models/model_reduit.onnx"),
     (ROOT / "models" / "features_selectionnees.json", "models/features_selectionnees.json"),
 ]
 
