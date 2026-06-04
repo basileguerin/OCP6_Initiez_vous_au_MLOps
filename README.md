@@ -14,7 +14,7 @@ Contrainte : un faux négatif coûte **10× plus** qu'un faux positif → seuil 
 | | URL |
 |---|---|
 | API FastAPI (Swagger) | https://basmoket-scoring-credit-api.hf.space/docs |
-| Interface Gradio (démo) | https://huggingface.co/spaces/basmoket/scoring-credit-demo |
+| Interface Gradio (démo) | https://basmoket-scoring-credit-demo.hf.space/ |
 | Repo GitHub | https://github.com/basileguerin/Scoring-Credit |
 
 ---
